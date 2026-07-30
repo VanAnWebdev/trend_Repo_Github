@@ -1,0 +1,33 @@
+name: Daily Github Trending News
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # Runs at 02:00 UTC (09:00 AM Vietnam Time) every day
+  workflow_dispatch: # Allows manual trigger from the GitHub Actions tab
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to push index.html back to the branch
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Run PowerShell Script
+        shell: pwsh
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          ./GithubNewsBot.ps1
+
+      - name: Commit and Push HTML
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "docs: auto-generate daily trending news [skip ci]" || echo "No changes to commit"
+          git push origin trend_github
