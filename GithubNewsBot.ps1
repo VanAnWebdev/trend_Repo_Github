@@ -1,22 +1,24 @@
 # GithubNewsBot.ps1
 # Requires PowerShell 5.1+
 
-$EnvPath = Join-Path $PSScriptRoot ".env"
+$TELEGRAM_BOT_TOKEN = $env:TELEGRAM_BOT_TOKEN
+$TELEGRAM_CHAT_ID = $env:TELEGRAM_CHAT_ID
+$GEMINI_API_KEY = $env:GEMINI_API_KEY
 
-if (-not (Test-Path $EnvPath)) {
-    Write-Host "[ERROR] Khong tim thay file .env tai $EnvPath"
-    exit 1
+# Fallback for local testing (reading from .env if variables are empty)
+if (-not $TELEGRAM_BOT_TOKEN) {
+    $EnvPath = Join-Path $PSScriptRoot ".env"
+    if (Test-Path $EnvPath) {
+        $EnvVars = @{}
+        Get-Content $EnvPath -Encoding UTF8 | Where-Object { $_ -match '=' -and $_ -notmatch '^#' } | ForEach-Object {
+            $parts = $_ -split '=', 2
+            $EnvVars[$parts[0].Trim()] = $parts[1].Trim()
+        }
+        $TELEGRAM_BOT_TOKEN = $EnvVars["TELEGRAM_BOT_TOKEN"]
+        $TELEGRAM_CHAT_ID = $EnvVars["TELEGRAM_CHAT_ID"]
+        $GEMINI_API_KEY = $EnvVars["GEMINI_API_KEY"]
+    }
 }
-
-$EnvVars = @{}
-Get-Content $EnvPath -Encoding UTF8 | Where-Object { $_ -match '=' -and $_ -notmatch '^#' } | ForEach-Object {
-    $parts = $_ -split '=', 2
-    $EnvVars[$parts[0].Trim()] = $parts[1].Trim()
-}
-
-$TELEGRAM_BOT_TOKEN = $EnvVars["TELEGRAM_BOT_TOKEN"]
-$TELEGRAM_CHAT_ID = $EnvVars["TELEGRAM_CHAT_ID"]
-$GEMINI_API_KEY = $EnvVars["GEMINI_API_KEY"]
 
 if (-not $TELEGRAM_BOT_TOKEN -or -not $TELEGRAM_CHAT_ID) {
     Write-Host "[ERROR] Thieu thong tin Telegram trong Environment"
